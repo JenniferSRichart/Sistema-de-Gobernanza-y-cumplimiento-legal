@@ -1,0 +1,301 @@
+--Para poder hacer los ejercicios vamos a: 1. Crear las Tablas, 2.Llenar con datos
+
+
+
+-- 1. Crear las tablas:
+
+-- Se crea esta tabla para poder referenciar las 3 tablas principales
+CREATE TABLE areas (
+    id_area INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre_area VARCHAR(100) NOT NULL UNIQUE
+);
+
+--Creacion de tabla Derechos Arco
+CREATE TABLE derechos_arco (
+    id_solicitud     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    tipo_derecho     VARCHAR(50) NOT NULL,
+    fecha_recepcion  DATE NOT NULL,
+    estado           VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+    id_area          INTEGER NOT NULL,
+    fecha_creacion   DATE NOT NULL DEFAULT CURRENT_DATE,
+
+    CONSTRAINT fk_derecho_area
+        FOREIGN KEY (id_area)
+        REFERENCES areas(id_area),
+
+    CONSTRAINT chk_tipo_derecho
+        CHECK (tipo_derecho IN ('Acceso', 'Rectificación', 'Cancelación', 'Oposición')),
+
+    CONSTRAINT chk_estado_derecho
+        CHECK (estado IN ('Pendiente', 'En proceso', 'Resuelto', 'Rechazado'))
+);
+
+--Creacion de tabla Brechas de seguridad
+CREATE TABLE brechas_seguridad (
+    id_brecha          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fecha              DATE NOT NULL,
+    severidad          VARCHAR(20) NOT NULL,
+    notificada_aepd    BOOLEAN NOT NULL DEFAULT FALSE,
+    id_area            INTEGER NOT NULL,
+    fecha_creacion     DATE NOT NULL DEFAULT CURRENT_DATE,
+
+    CONSTRAINT fk_brecha_area
+        FOREIGN KEY (id_area)
+        REFERENCES areas(id_area),
+
+    CONSTRAINT chk_severidad
+        CHECK (severidad IN ('Baja', 'Media', 'Alta', 'Crítica'))
+);
+
+--Creacion de tabla Contratos 
+CREATE TABLE contratos (
+    id_contrato       INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    proveedor         VARCHAR(150) NOT NULL,
+    fecha_inicio      DATE NOT NULL,
+    fecha_fin         DATE NOT NULL,
+    estado            VARCHAR(50) NOT NULL DEFAULT 'Activo',
+    id_area           INTEGER NOT NULL,
+    fecha_creacion    DATE NOT NULL DEFAULT CURRENT_DATE,
+
+    CONSTRAINT fk_contrato_area
+        FOREIGN KEY (id_area)
+        REFERENCES areas(id_area),
+
+    CONSTRAINT chk_fechas
+        CHECK (fecha_fin >= fecha_inicio)
+);
+
+--Tablas hijas - tomando en cuenta las 3FN - Se crean estas tablas complementarias
+CREATE TABLE revisiones_contrato (
+    id_revision     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_contrato     INTEGER NOT NULL,
+    fecha_revision  DATE NOT NULL,
+    resultado       VARCHAR(50) NOT NULL,
+    observaciones   TEXT,
+
+    CONSTRAINT fk_revision_contrato
+        FOREIGN KEY (id_contrato)
+        REFERENCES contratos(id_contrato)
+);
+
+CREATE TABLE evidencias_arco (
+    id_evidencia    INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_solicitud    INTEGER NOT NULL,
+    tipo_evidencia  VARCHAR(100) NOT NULL,
+    fecha_registro  DATE NOT NULL DEFAULT CURRENT_DATE,
+    descripcion     TEXT,
+
+    CONSTRAINT fk_evidencia_arco
+        FOREIGN KEY (id_solicitud)
+        REFERENCES derechos_arco(id_solicitud)
+);
+
+CREATE TABLE acciones_brecha (
+    id_accion     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_brecha     INTEGER NOT NULL,
+    descripcion   TEXT NOT NULL,
+    responsable   VARCHAR(100) NOT NULL,
+    fecha_limite  DATE,
+    estado        VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+
+    CONSTRAINT fk_accion_brecha
+        FOREIGN KEY (id_brecha)
+        REFERENCES brechas_seguridad(id_brecha)
+);
+
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public' --Public es el schema por defecto en PostgreSQL
+  AND table_name IN (
+    'contratos',
+    'derechos_arco',
+    'brechas_seguridad',
+    'acciones_brecha',
+    'evidencias_arco',
+    'revisiones_contrato'
+  )
+ORDER BY table_name;
+
+-- Ver estructura de la tabla contratos
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'contratos'
+ORDER BY ordinal_position;
+
+-- Ver estructura de la tabla brechas_seguridad
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'brechas_seguridad'
+ORDER BY ordinal_position;
+
+-- Ver estructura de la tabla derechos_arco
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'derechos_arco'
+ORDER BY ordinal_position;
+
+-- Ver estructura de la tabla contratos
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'acciones_brecha'
+ORDER BY ordinal_position;
+
+-- Ver estructura de la tabla contratos
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'evidencias_arco'
+ORDER BY ordinal_position;
+
+-- Ver estructura de la tabla contratos
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'revisiones_contrato'
+ORDER BY ordinal_position;
+
+
+
+--2. Cargar datos a las tablas
+
+
+INSERT INTO areas (nombre_area) VALUES
+('Legal'),
+('Compliance'),
+('Gobernanza'),
+('Auditoría Interna'),
+('Protección de Datos'),
+('Seguridad de la Información'),
+('Riesgos'),
+('Finanzas'),
+('Compras'),
+('Operaciones')
+RETURNING id_area, nombre_area;
+
+INSERT INTO contratos (
+    proveedor,
+    fecha_inicio,
+    fecha_fin,
+    estado,
+    id_area
+) VALUES
+('Accenture', '2024-01-01', '2026-12-31', 'Activo', 1),
+('Deloitte', '2023-06-15', '2025-06-14', 'Activo', 2),
+('PwC', '2022-03-01', '2024-03-01', 'Vencido', 3),
+('KPMG', '2024-09-01', '2027-08-31', 'Activo', 4),
+('Telefónica Tech', '2023-11-01', '2026-10-31', 'Activo', 6),
+('Indra', '2022-05-10', '2025-05-09', 'Activo', 7),
+('IBM', '2024-02-01', '2026-01-31', 'Activo', 6),
+('Microsoft', '2023-01-01', '2024-12-31', 'Vencido', 6),
+('Capgemini', '2024-07-01', '2027-06-30', 'Activo', 8),
+('Everis', '2023-03-15', '2026-03-14', 'En revisión', 9)
+RETURNING id_contrato, proveedor, estado;
+
+INSERT INTO brechas_seguridad (
+    fecha,
+    severidad,
+    notificada_aepd,
+    id_area
+) VALUES
+('2024-01-15', 'Alta', TRUE, 6),
+('2024-02-10', 'Media', FALSE, 6),
+('2024-03-05', 'Crítica', TRUE, 5),
+('2024-03-20', 'Baja', FALSE, 7),
+('2024-04-12', 'Alta', TRUE, 6),
+('2024-05-01', 'Media', FALSE, 8),
+('2024-05-18', 'Crítica', TRUE, 5),
+('2024-06-07', 'Alta', FALSE, 6),
+('2024-06-25', 'Baja', FALSE, 9),
+('2024-07-10', 'Media', TRUE, 6)
+RETURNING id_brecha, severidad, notificada_aepd;
+
+INSERT INTO derechos_arco (
+    tipo_derecho,
+    fecha_recepcion,
+    estado,
+    id_area
+) VALUES
+('Acceso', '2024-01-10', 'Resuelto', 5),
+('Rectificación', '2024-01-25', 'En proceso', 5),
+('Cancelación', '2024-02-05', 'Pendiente', 5),
+('Oposición', '2024-02-18', 'Resuelto', 6),
+('Acceso', '2024-03-02', 'En proceso', 5),
+('Rectificación', '2024-03-15', 'Rechazado', 5),
+('Cancelación', '2024-04-01', 'Pendiente', 6),
+('Acceso', '2024-04-20', 'Resuelto', 5),
+('Oposición', '2024-05-05', 'En proceso', 5),
+('Rectificación', '2024-05-22', 'Pendiente', 6)
+RETURNING id_solicitud, tipo_derecho, estado;
+
+INSERT INTO revisiones_contrato (
+    id_contrato,
+    fecha_revision,
+    resultado,
+    observaciones
+) VALUES
+(1, '2024-02-01', 'Aprobado', 'Contrato conforme a normativa vigente'),
+(1, '2025-01-15', 'Observado', 'Se recomienda actualizar cláusulas de protección de datos'),
+(2, '2024-07-10', 'Aprobado', 'Sin incidencias detectadas'),
+(3, '2023-03-01', 'Rechazado', 'Falta documentación obligatoria'),
+(4, '2024-10-05', 'Aprobado', 'Contrato revisado y validado'),
+(5, '2024-01-20', 'Observado', 'Revisar anexos técnicos'),
+(6, '2023-12-15', 'Aprobado', 'Cumple requisitos legales'),
+(7, '2024-03-10', 'Aprobado', 'Sin observaciones'),
+(8, '2023-11-01', 'Observado', 'Pendiente revisión de seguridad'),
+(10, '2024-04-22', 'Aprobado', 'Validación completa')
+RETURNING id_revision, id_contrato, resultado;
+
+INSERT INTO evidencias_arco (
+    id_solicitud,
+    tipo_evidencia,
+    fecha_registro,
+    descripcion
+) VALUES
+(1, 'Email respuesta', '2024-01-12', 'Respuesta enviada al solicitante'),
+(2, 'Documento adjunto', '2024-01-28', 'Se solicita documentación adicional'),
+(3, 'Registro sistema', '2024-02-07', 'Solicitud registrada en sistema interno'),
+(4, 'Email respuesta', '2024-02-20', 'Resolución comunicada al usuario'),
+(5, 'Informe legal', '2024-03-05', 'Evaluación jurídica realizada'),
+(6, 'Documento adjunto', '2024-03-18', 'Rechazo documentado con justificación'),
+(7, 'Registro sistema', '2024-04-02', 'Solicitud en proceso pendiente'),
+(8, 'Email respuesta', '2024-04-22', 'Confirmación de cierre enviada'),
+(9, 'Informe legal', '2024-05-07', 'Análisis de oposición realizado'),
+(10, 'Documento adjunto', '2024-05-25', 'Solicitud aún en revisión')
+RETURNING id_evidencia, id_solicitud, tipo_evidencia;
+
+INSERT INTO acciones_brecha (
+    id_brecha,
+    descripcion,
+    responsable,
+    fecha_limite,
+    estado
+) VALUES
+(1, 'Notificación a AEPD y análisis inicial del incidente', 'Equipo Legal', '2024-01-20', 'Completada'),
+(2, 'Revisión de accesos no autorizados y actualización de credenciales', 'IT Seguridad', '2024-02-20', 'En proceso'),
+(3, 'Activación de protocolo de crisis y comunicación a afectados', 'Compliance', '2024-03-07', 'Completada'),
+(4, 'Evaluación de impacto y documentación de incidente menor', 'Riesgos', '2024-03-25', 'Pendiente'),
+(5, 'Revisión de políticas de seguridad y formación interna', 'IT Seguridad', '2024-04-20', 'En proceso'),
+(6, 'Auditoría interna tras incidente de nivel medio', 'Auditoría Interna', '2024-05-10', 'Pendiente'),
+(7, 'Notificación urgente a AEPD y mitigación inmediata', 'Legal', '2024-05-20', 'Completada'),
+(8, 'Implementación de doble factor de autenticación', 'IT Seguridad', '2024-06-15', 'En proceso'),
+(9, 'Revisión de logs y análisis forense', 'IT Seguridad', '2024-07-01', 'Pendiente'),
+(10, 'Actualización de procedimientos y reporte final', 'Compliance', '2024-07-20', 'Pendiente')
+RETURNING id_accion, id_brecha, estado;
+
+
+
+
+
+--Comandos Fundamentales
+
+--CREATE TABLE: Define la estructura, nombre y campos de la tabla.
+--INSERT INTO: Incorpora registros específicos en los campos definidos.
+--SELECT: Consulta y visualiza los datos almacenados.
+--Punto y coma (;): Obligatorio al finalizar cada sentencia para evitar errores de compilación.
+--Restricciones de Integridad
+
+--Llaves Primarias (PRIMARY KEY): Identificadores únicos para cada fila.
+--SERIAL: Incremento automático simple.
+--GENERATED ALWAYS AS IDENTITY: Estándar moderno y recomendado.
+--Restricciones de Campo:
+--NOT NULL: Impide valores vacíos.
+--UNIQUE: Asegura que no existan datos duplicados en la columna.
+--DEFAULT: Asigna un valor predeterminado (ej. CURRENT_DATE o TRUE) si no se ingresa información.

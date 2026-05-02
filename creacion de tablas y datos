@@ -2,8 +2,6 @@
 -- Sistema de Gobernanza y Cumplimiento Legal
 -- Para poder hacer los ejercicios vamos a: 1. Crear las Tablas, 2.Llenar con datos
 
-
-
 -- 1. Crear las tablas:
 
 -- Se crea esta tabla para poder referenciar las 3 tablas principales
@@ -118,37 +116,37 @@ WHERE table_schema = 'public' --Public es el schema por defecto en PostgreSQL
   )
 ORDER BY table_name;
 
--- Ver estructura de la tabla contratos
+-- Ver estructura de la tabla Contratos
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'contratos'
 ORDER BY ordinal_position;
 
--- Ver estructura de la tabla brechas_seguridad
+-- Ver estructura de la tabla Brechas Seguridad
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'brechas_seguridad'
 ORDER BY ordinal_position;
 
--- Ver estructura de la tabla derechos_arco
+-- Ver estructura de la tabla Derechos Arco
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'derechos_arco'
 ORDER BY ordinal_position;
 
--- Ver estructura de la tabla contratos
+-- Ver estructura de la tabla Acciones Brecha
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'acciones_brecha'
 ORDER BY ordinal_position;
 
--- Ver estructura de la tabla contratos
+-- Ver estructura de la tabla Evidencias Arco
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'evidencias_arco'
 ORDER BY ordinal_position;
 
--- Ver estructura de la tabla contratos
+-- Ver estructura de la tabla Revisiones Contratos
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'revisiones_contrato'

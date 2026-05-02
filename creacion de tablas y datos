@@ -1,10 +1,10 @@
 
-# 📊 Sistema de Gobernanza y Cumplimiento Legal
+-- Sistema de Gobernanza y Cumplimiento Legal
 -- Para poder hacer los ejercicios vamos a: 1. Crear las Tablas, 2.Llenar con datos
 
 
 
-## 1. Crear las tablas:
+-- 1. Crear las tablas:
 
 -- Se crea esta tabla para poder referenciar las 3 tablas principales
 CREATE TABLE areas (
@@ -156,7 +156,7 @@ ORDER BY ordinal_position;
 
 
 
-## 2. Cargar datos a las tablas
+-- 2. Cargar datos a las tablas
 
 
 INSERT INTO areas (nombre_area) VALUES

@@ -1,3 +1,7 @@
+-- Sistema de Gobernanza y Cumplimiento Legal
+-- Para poder hacer los ejercicios vamos a: 1. Crear las Tablas, 2.Llenar con datos
+
+-- 1. Crear las tablas:
 
 -- Se crea esta tabla para poder referenciar las 3 tablas principales
 CREATE TABLE areas (
@@ -147,23 +151,11 @@ FROM information_schema.columns
 WHERE table_name = 'revisiones_contrato'
 ORDER BY ordinal_position;
 
---Comandos Fundamentales
 
---CREATE TABLE: Define la estructura, nombre y campos de la tabla.
---INSERT INTO: Incorpora registros específicos en los campos definidos.
---SELECT: Consulta y visualiza los datos almacenados.
---Punto y coma (;): Obligatorio al finalizar cada sentencia para evitar errores de compilación.
---Restricciones de Integridad
 
---Llaves Primarias (PRIMARY KEY): Identificadores únicos para cada fila.
---SERIAL: Incremento automático simple.
---GENERATED ALWAYS AS IDENTITY: Estándar moderno y recomendado.
---Restricciones de Campo:
---NOT NULL: Impide valores vacíos.
---UNIQUE: Asegura que no existan datos duplicados en la columna.
---DEFAULT: Asigna un valor predeterminado (ej. CURRENT_DATE o TRUE) si no se ingresa información.
+-- 2. Cargar datos a las tablas
 
---Cargar datos a las tablas
+
 INSERT INTO areas (nombre_area) VALUES
 ('Legal'),
 ('Compliance'),
@@ -287,3 +279,18 @@ INSERT INTO acciones_brecha (
 (10, 'Actualización de procedimientos y reporte final', 'Compliance', '2024-07-20', 'Pendiente')
 RETURNING id_accion, id_brecha, estado;
 
+--Comandos Fundamentales
+
+--CREATE TABLE: Define la estructura, nombre y campos de la tabla.
+--INSERT INTO: Incorpora registros específicos en los campos definidos.
+--SELECT: Consulta y visualiza los datos almacenados.
+--Punto y coma (;): Obligatorio al finalizar cada sentencia para evitar errores de compilación.
+--Restricciones de Integridad
+
+--Llaves Primarias (PRIMARY KEY): Identificadores únicos para cada fila.
+--SERIAL: Incremento automático simple.
+--GENERATED ALWAYS AS IDENTITY: Estándar moderno y recomendado.
+--Restricciones de Campo:
+--NOT NULL: Impide valores vacíos.
+--UNIQUE: Asegura que no existan datos duplicados en la columna.
+--DEFAULT: Asigna un valor predeterminado (ej. CURRENT_DATE o TRUE) si no se ingresa información.

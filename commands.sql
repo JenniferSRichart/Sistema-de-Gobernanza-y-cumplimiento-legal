@@ -178,7 +178,7 @@ CREATE TABLE riesgos (
 );
 
 
--- 1.1 Verificacion de Tablas
+-- 1.1 Verificacion de Tablas (Information_schuema)
 SELECT table_name
 FROM information_schema.tables
 WHERE table_schema = 'public'
@@ -197,14 +197,14 @@ WHERE table_schema = 'public'
   )
 ORDER BY table_name;
 
--- 1.2 Ver estructura de una tabla (Ejemplo: Contratos)
+-- 1.2 Ver estructura de una tabla (Ejemplo: Contratos) (columns)
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'contratos'
 ORDER BY ordinal_position;
 
 
--- 2. Cargar datos a las tablas
+-- 2. Cargar datos a las tablas (multiples datos)
 
 
 INSERT INTO areas (nombre_area) VALUES

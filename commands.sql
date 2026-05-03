@@ -178,7 +178,7 @@ CREATE TABLE riesgos (
 );
 
 
--- 1.1 Verificacion de Tablas (Information_schuema)
+-- 1.1 Verificacion de Tablas (Information_schema)
 SELECT table_name
 FROM information_schema.tables
 WHERE table_schema = 'public'

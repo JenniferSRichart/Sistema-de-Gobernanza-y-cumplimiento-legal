@@ -9,6 +9,24 @@ CREATE TABLE areas (
     nombre_area VARCHAR(100) NOT NULL UNIQUE
 );
 
+--Creacion de tabla Contratos 
+CREATE TABLE contratos (
+    id_contrato       INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    proveedor         VARCHAR(150) NOT NULL,
+    fecha_inicio      DATE NOT NULL,
+    fecha_fin         DATE NOT NULL,
+    estado            VARCHAR(50) NOT NULL DEFAULT 'Activo',
+    id_area           INTEGER NOT NULL,
+    fecha_creacion    DATE NOT NULL DEFAULT CURRENT_DATE,
+
+    CONSTRAINT fk_contrato_area
+        FOREIGN KEY (id_area)
+        REFERENCES areas(id_area),
+
+    CONSTRAINT chk_fechas
+        CHECK (fecha_fin >= fecha_inicio)
+);
+
 --Creacion de tabla Derechos Arco
 CREATE TABLE derechos_arco (
     id_solicitud     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -46,25 +64,26 @@ CREATE TABLE brechas_seguridad (
         CHECK (severidad IN ('Baja', 'Media', 'Alta', 'Crítica'))
 );
 
---Creacion de tabla Contratos 
-CREATE TABLE contratos (
-    id_contrato       INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    proveedor         VARCHAR(150) NOT NULL,
-    fecha_inicio      DATE NOT NULL,
-    fecha_fin         DATE NOT NULL,
-    estado            VARCHAR(50) NOT NULL DEFAULT 'Activo',
+
+--Tablas hijas - tomando en cuenta las 3FN - Se crean estas tablas complementarias
+
+-- Tabla de políticas internas
+CREATE TABLE politicas (
+    id_politica       INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nombre_politica   VARCHAR(150) NOT NULL,
     id_area           INTEGER NOT NULL,
+    estado            VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+    fecha_aprobacion  DATE,
     fecha_creacion    DATE NOT NULL DEFAULT CURRENT_DATE,
 
-    CONSTRAINT fk_contrato_area
+    CONSTRAINT fk_politica_area
         FOREIGN KEY (id_area)
         REFERENCES areas(id_area),
 
-    CONSTRAINT chk_fechas
-        CHECK (fecha_fin >= fecha_inicio)
+    CONSTRAINT chk_estado_politica
+        CHECK (estado IN ('Pendiente', 'Aprobada', 'En revisión', 'Obsoleta'))
 );
 
---Tablas hijas - tomando en cuenta las 3FN - Se crean estas tablas complementarias
 CREATE TABLE revisiones_contrato (
     id_revision     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_contrato     INTEGER NOT NULL,
@@ -102,55 +121,87 @@ CREATE TABLE acciones_brecha (
         REFERENCES brechas_seguridad(id_brecha)
 );
 
+-- Tabla de evidencias asociadas a políticas
+CREATE TABLE evidencias_politicas (
+    id_evidencia    INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_politica     INTEGER NOT NULL,
+    fecha_entrega   DATE NOT NULL,
+    estado          VARCHAR(50) NOT NULL DEFAULT 'Pendiente',
+    descripcion     TEXT,
+
+    CONSTRAINT fk_evidencia_politica
+        FOREIGN KEY (id_politica)
+        REFERENCES politicas(id_politica),
+
+    CONSTRAINT chk_estado_evidencia_politica
+        CHECK (estado IN ('Pendiente', 'Entregada', 'Rechazada', 'En revisión'))
+);
+
+-- Tabla de incidencias legales o de compliance
+CREATE TABLE incidencias (
+    id_incidencia    INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_area          INTEGER NOT NULL,
+    tipo_incidencia  VARCHAR(100) NOT NULL,
+    gravedad         VARCHAR(20) NOT NULL,
+    estado           VARCHAR(50) NOT NULL DEFAULT 'Abierta',
+    fecha_registro   DATE NOT NULL DEFAULT CURRENT_DATE,
+
+    CONSTRAINT fk_incidencia_area
+        FOREIGN KEY (id_area)
+        REFERENCES areas(id_area),
+
+    CONSTRAINT chk_gravedad_incidencia
+        CHECK (gravedad IN ('Baja', 'Media', 'Alta', 'Crítica')),
+
+    CONSTRAINT chk_estado_incidencia
+        CHECK (estado IN ('Abierta', 'En proceso', 'Cerrada', 'Escalada'))
+);
+
+-- Tabla de riesgos legales
+CREATE TABLE riesgos (
+    id_riesgo      INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_area        INTEGER NOT NULL,
+    categoria      VARCHAR(100) NOT NULL,
+    nivel_riesgo   VARCHAR(20) NOT NULL,
+    estado         VARCHAR(50) NOT NULL DEFAULT 'Abierto',
+    fecha_creacion DATE NOT NULL DEFAULT CURRENT_DATE,
+
+    CONSTRAINT fk_riesgo_area
+        FOREIGN KEY (id_area)
+        REFERENCES areas(id_area),
+
+    CONSTRAINT chk_nivel_riesgo
+        CHECK (nivel_riesgo IN ('Bajo', 'Medio', 'Alto', 'Crítico')),
+
+    CONSTRAINT chk_estado_riesgo
+        CHECK (estado IN ('Abierto', 'En seguimiento', 'Mitigado', 'Cerrado'))
+);
+
+
+-- 1.1 Verificacion de Tablas
 SELECT table_name
 FROM information_schema.tables
-WHERE table_schema = 'public' --Public es el schema por defecto en PostgreSQL
+WHERE table_schema = 'public'
   AND table_name IN (
+    'areas',
     'contratos',
     'derechos_arco',
     'brechas_seguridad',
     'acciones_brecha',
     'evidencias_arco',
-    'revisiones_contrato'
+    'revisiones_contrato',
+    'politicas',
+    'evidencias_politicas',
+    'incidencias',
+    'riesgos'
   )
 ORDER BY table_name;
 
--- Ver estructura de la tabla contratos
+-- 1.2 Ver estructura de una tabla (Ejemplo: Contratos)
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = 'contratos'
 ORDER BY ordinal_position;
-
--- Ver estructura de la tabla brechas_seguridad
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_name = 'brechas_seguridad'
-ORDER BY ordinal_position;
-
--- Ver estructura de la tabla derechos_arco
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_name = 'derechos_arco'
-ORDER BY ordinal_position;
-
--- Ver estructura de la tabla contratos
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_name = 'acciones_brecha'
-ORDER BY ordinal_position;
-
--- Ver estructura de la tabla contratos
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_name = 'evidencias_arco'
-ORDER BY ordinal_position;
-
--- Ver estructura de la tabla contratos
-SELECT column_name, data_type, is_nullable, column_default
-FROM information_schema.columns
-WHERE table_name = 'revisiones_contrato'
-ORDER BY ordinal_position;
-
 
 
 -- 2. Cargar datos a las tablas
@@ -278,6 +329,85 @@ INSERT INTO acciones_brecha (
 (9, 'Revisión de logs y análisis forense', 'IT Seguridad', '2024-07-01', 'Pendiente'),
 (10, 'Actualización de procedimientos y reporte final', 'Compliance', '2024-07-20', 'Pendiente')
 RETURNING id_accion, id_brecha, estado;
+
+
+INSERT INTO politicas (
+    nombre_politica,
+    id_area,
+    estado,
+    fecha_aprobacion
+) VALUES
+('Política de Protección de Datos', 5, 'Aprobada', '2024-01-15'),
+('Política de Seguridad de la Información', 6, 'Aprobada', '2024-02-01'),
+('Código Ético Corporativo', 1, 'Aprobada', '2023-11-20'),
+('Política de Prevención de Riesgos Legales', 7, 'En revisión', NULL),
+('Política de Compras Responsables', 9, 'Aprobada', '2024-03-10'),
+('Política de Auditoría Interna', 4, 'Aprobada', '2024-04-05'),
+('Política de Gobierno Corporativo', 3, 'En revisión', NULL),
+('Política de Compliance Penal', 2, 'Aprobada', '2024-01-30'),
+('Política Financiera Interna', 8, 'Pendiente', NULL),
+('Política Operativa de Continuidad', 10, 'Obsoleta', '2022-06-15')
+RETURNING id_politica, nombre_politica, estado;
+
+INSERT INTO evidencias_politicas (
+    id_politica,
+    fecha_entrega,
+    estado,
+    descripcion
+) VALUES
+(1, '2024-01-20', 'Entregada', 'Documento aprobado y publicado internamente'),
+(2, '2024-02-05', 'Entregada', 'Evidencia de comunicación al personal'),
+(3, '2023-11-25', 'Entregada', 'Acta de aprobación del comité'),
+(4, '2024-04-15', 'En revisión', 'Pendiente validación por área de riesgos'),
+(5, '2024-03-15', 'Entregada', 'Registro de aceptación de proveedores'),
+(6, '2024-04-10', 'Entregada', 'Informe de auditoría asociado'),
+(7, '2024-05-01', 'Pendiente', 'Pendiente entrega de documentación final'),
+(8, '2024-02-03', 'Entregada', 'Evidencia de formación en compliance'),
+(9, '2024-05-20', 'Pendiente', 'Pendiente revisión financiera'),
+(10, '2024-06-01', 'Rechazada', 'Documento desactualizado')
+RETURNING id_evidencia, id_politica, estado;
+
+INSERT INTO incidencias (
+    id_area,
+    tipo_incidencia,
+    gravedad,
+    estado,
+    fecha_registro
+) VALUES
+(1, 'Incumplimiento contractual', 'Alta', 'Abierta', '2024-01-18'),
+(2, 'Posible incumplimiento normativo', 'Crítica', 'Escalada', '2024-02-12'),
+(5, 'Solicitud RGPD fuera de plazo', 'Alta', 'En proceso', '2024-03-03'),
+(6, 'Acceso no autorizado', 'Crítica', 'Abierta', '2024-03-18'),
+(4, 'Hallazgo de auditoría', 'Media', 'En proceso', '2024-04-08'),
+(7, 'Riesgo no mitigado', 'Alta', 'Abierta', '2024-04-25'),
+(9, 'Falta de documentación contractual', 'Media', 'Cerrada', '2024-05-10'),
+(8, 'Error en validación financiera', 'Baja', 'Cerrada', '2024-05-28'),
+(10, 'Incidencia operativa con impacto legal', 'Media', 'Abierta', '2024-06-15'),
+(3, 'Falta de aprobación de política interna', 'Alta', 'En proceso', '2024-07-01')
+RETURNING id_incidencia, tipo_incidencia, gravedad, estado;
+
+INSERT INTO incidencias (
+    id_area,
+    tipo_incidencia,
+    gravedad,
+    estado,
+    fecha_registro
+) VALUES
+(1, 'Incumplimiento contractual', 'Alta', 'Abierta', '2024-01-18'),
+(2, 'Posible incumplimiento normativo', 'Crítica', 'Escalada', '2024-02-12'),
+(5, 'Solicitud RGPD fuera de plazo', 'Alta', 'En proceso', '2024-03-03'),
+(6, 'Acceso no autorizado', 'Crítica', 'Abierta', '2024-03-18'),
+(4, 'Hallazgo de auditoría', 'Media', 'En proceso', '2024-04-08'),
+(7, 'Riesgo no mitigado', 'Alta', 'Abierta', '2024-04-25'),
+(9, 'Falta de documentación contractual', 'Media', 'Cerrada', '2024-05-10'),
+(8, 'Error en validación financiera', 'Baja', 'Cerrada', '2024-05-28'),
+(10, 'Incidencia operativa con impacto legal', 'Media', 'Abierta', '2024-06-15'),
+(3, 'Falta de aprobación de política interna', 'Alta', 'En proceso', '2024-07-01')
+RETURNING id_incidencia, tipo_incidencia, gravedad, estado;
+
+
+
+
 
 --Comandos Fundamentales
 

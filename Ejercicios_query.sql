@@ -2,10 +2,12 @@
 
 --Ejemplo de queries que podemos hacer con los datos
 
+-- Select/From
 --1. Listado de áreas
 SELECT id_area, nombre_area
 FROM areas;
 
+-- Where
 --2. Políticas aprobadas
 SELECT nombre_politica, id_area, fecha_aprobacion
 FROM politicas
@@ -30,6 +32,7 @@ FROM riesgos
 WHERE nivel_riesgo = 'Alto'
   AND estado <> 'Cerrado';
 
+-- Join
 --7. Políticas con nombre de área
 SELECT p.nombre_politica, p.estado, a.nombre_area
 FROM politicas p
@@ -46,7 +49,6 @@ FROM incidencias i
 JOIN areas a
   ON i.id_area = a.id_area
 WHERE i.estado = 'Abierta';
-
 --10. Revisiones de contratos
 SELECT c.proveedor, r.fecha_revision, r.resultado, r.observaciones
 FROM contratos c
@@ -57,12 +59,69 @@ SELECT b.id_brecha, b.severidad, a.descripcion, a.responsable, a.estado
 FROM brechas_seguridad b
 JOIN acciones_brecha a
   ON b.id_brecha = a.id_brecha;
-
 --12. Evidencias asociadas a solicitudes ARCO
 SELECT d.id_solicitud, d.tipo_derecho, d.estado, e.tipo_evidencia, e.fecha_registro
 FROM derechos_arco d
 JOIN evidencias_arco e
   ON d.id_solicitud = e.id_solicitud;
+
+--Inner Join
+-- Contratos con nombre de área
+SELECT c.id_contrato, c.proveedor, c.estado, a.nombre_area
+FROM contratos c
+INNER JOIN areas a
+  ON c.id_area = a.id_area;
+
+--Políticas con área responsable
+SELECT p.id_politica, p.nombre_politica, p.estado, a.nombre_area
+FROM politicas p
+INNER JOIN areas a
+  ON p.id_area = a.id_area;
+
+--Riesgos por área
+SELECT r.id_riesgo, r.categoria, r.nivel_riesgo, r.estado, a.nombre_area
+FROM riesgos r
+INNER JOIN areas a
+  ON r.id_area = a.id_area;
+
+-- Brechas de seguridad con área afectada
+SELECT b.id_brecha, b.fecha, b.severidad, b.notificada_aepd, a.nombre_area
+FROM brechas_seguridad b
+INNER JOIN areas a
+  ON b.id_area = a.id_area;
+
+-- Derechos ARCO con área responsable
+SELECT d.id_solicitud, d.tipo_derecho, d.estado, d.fecha_recepcion, a.nombre_area
+FROM derechos_arco d
+INNER JOIN areas a
+  ON d.id_area = a.id_area;
+
+--Contratos con revisiones legales
+SELECT c.id_contrato, c.proveedor, r.fecha_revision, r.resultado
+FROM contratos c
+INNER JOIN revisiones_contrato r
+  ON c.id_contrato = r.id_contrato;
+
+--Brechas con acciones correctivas
+SELECT b.id_brecha, b.severidad, a.descripcion, a.responsable, a.estado
+FROM brechas_seguridad b
+INNER JOIN acciones_brecha a
+  ON b.id_brecha = a.id_brecha;
+
+--Solicitudes ARCO con evidencias
+SELECT d.id_solicitud, d.tipo_derecho, d.estado, e.tipo_evidencia, e.fecha_registro
+FROM derechos_arco d
+INNER JOIN evidencias_arco e
+  ON d.id_solicitud = e.id_solicitud;
+
+--Políticas con evidencias de cumplimiento
+SELECT p.id_politica, p.nombre_politica, p.estado AS estado_politica, e.estado AS estado_evidencia, e.fecha_entrega
+FROM politicas p
+INNER JOIN evidencias_politicas e
+  ON p.id_politica = e.id_politica;
+
+
+-- Left Join
 --13. Contratos sin revisión legal
 SELECT c.id_contrato, c.proveedor, c.estado
 FROM contratos c
@@ -77,6 +136,37 @@ LEFT JOIN evidencias_politicas e
   ON p.id_politica = e.id_politica
 WHERE e.id_evidencia IS NULL;
 
+-- Solicitudes ARCO sin evidencia
+SELECT d.id_solicitud, d.tipo_derecho, d.estado
+FROM derechos_arco d
+LEFT JOIN evidencias_arco e
+  ON d.id_solicitud = e.id_solicitud
+WHERE e.id_evidencia IS NULL;
+
+--Brechas sin acciones correctivas
+SELECT b.id_brecha, b.fecha, b.severidad
+FROM brechas_seguridad b
+LEFT JOIN acciones_brecha a
+  ON b.id_brecha = a.id_brecha
+WHERE a.id_accion IS NULL;
+
+--Todas las áreas con sus contratos si existen
+SELECT a.nombre_area, c.id_contrato, c.proveedor, c.estado
+FROM areas a
+LEFT JOIN contratos c
+  ON a.id_area = c.id_area
+ORDER BY a.nombre_area;
+
+--Todas las áreas con total de solicitudes ARCO pendientes
+SELECT a.nombre_area, COUNT(d.id_solicitud) AS solicitudes_pendientes
+FROM areas a
+LEFT JOIN derechos_arco d
+  ON a.id_area = d.id_area
+ AND d.estado = 'Pendiente'
+GROUP BY a.nombre_area
+ORDER BY a.nombre_area;
+
+-- Join + Group by
 --15. Número de contratos por área
 SELECT a.nombre_area, COUNT(c.id_contrato) AS total_contratos
 FROM areas a
@@ -84,41 +174,55 @@ JOIN contratos c
   ON a.id_area = c.id_area
 GROUP BY a.nombre_area;
 
+--Todas las áreas con total de brechas
+Tipo de JOIN trabajado: LEFT JOIN
+SELECT a.nombre_area, COUNT(b.id_brecha) AS total_brechas
+FROM areas a
+LEFT JOIN brechas_seguridad b
+  ON a.id_area = b.id_area
+GROUP BY a.nombre_area
+ORDER BY a.nombre_area;
+
+
+-- Group by
 --16. Brechas por severidad
 SELECT severidad, COUNT(*) AS total_brechas
 FROM brechas_seguridad
 GROUP BY severidad;
-
 --17. Solicitudes ARCO por tipo de derecho
 SELECT tipo_derecho, COUNT(*) AS total_solicitudes
 FROM derechos_arco
 GROUP BY tipo_derecho;
-
 --18. Riesgos por categoría
 SELECT categoria, COUNT(*) AS total_riesgos
 FROM riesgos
 GROUP BY categoria;
-
 --19. Evidencias ARCO por tipo
 SELECT tipo_evidencia, COUNT(*) AS total_evidencias
 FROM evidencias_arco
 GROUP BY tipo_evidencia;
-
 --20. Evidencias de políticas por estado
 SELECT estado, COUNT(*) AS total_evidencias
 FROM evidencias_politicas
 GROUP BY estado;
-
 --21. Revisiones de contrato por resultado
 SELECT resultado, COUNT(*) AS total_revisiones
 FROM revisiones_contrato
 GROUP BY resultado;
-
 --22. Acciones de brecha por responsable
 SELECT responsable, COUNT(*) AS total_acciones
 FROM acciones_brecha
 GROUP BY responsable;
 
+--27. Brechas con acciones pendientes
+SELECT b.id_brecha, b.severidad, COUNT(a.id_accion) AS acciones_no_completadas
+FROM brechas_seguridad b
+JOIN acciones_brecha a
+  ON b.id_brecha = a.id_brecha
+WHERE a.estado IN ('Pendiente', 'En proceso')
+GROUP BY b.id_brecha, b.severidad;
+
+-- Join + Group by + Having
 --23. Áreas con más de una incidencia abierta
 SELECT a.nombre_area, COUNT(i.id_incidencia) AS incidencias_abiertas
 FROM areas a
@@ -127,14 +231,12 @@ JOIN incidencias i
 WHERE i.estado = 'Abierta'
 GROUP BY a.nombre_area
 HAVING COUNT(i.id_incidencia) > 1;
-
 --24. Proveedores con más de un contrato activo
 SELECT proveedor, COUNT(*) AS contratos_activos
 FROM contratos
 WHERE estado = 'Activo'
 GROUP BY proveedor
 HAVING COUNT(*) > 1;
-
 --25. Áreas con riesgos altos o críticos abiertos
 SELECT a.nombre_area, COUNT(r.id_riesgo) AS riesgos_relevantes
 FROM areas a
@@ -145,6 +247,7 @@ WHERE r.nivel_riesgo IN ('Alto', 'Crítico')
 GROUP BY a.nombre_area
 HAVING COUNT(r.id_riesgo) >= 1;
 
+--Join + Join
 --26. Áreas con políticas aprobadas y evidencias pendientes
 SELECT a.nombre_area, COUNT(e.id_evidencia) AS evidencias_pendientes
 FROM areas a
@@ -156,14 +259,8 @@ WHERE p.estado = 'Aprobada'
   AND e.estado = 'Pendiente'
 GROUP BY a.nombre_area;
 
---27. Brechas con acciones pendientes
-SELECT b.id_brecha, b.severidad, COUNT(a.id_accion) AS acciones_no_completadas
-FROM brechas_seguridad b
-JOIN acciones_brecha a
-  ON b.id_brecha = a.id_brecha
-WHERE a.estado IN ('Pendiente', 'En proceso')
-GROUP BY b.id_brecha, b.severidad;
 
+--Left Join
 --28. Solicitudes ARCO no resueltas con evidencias
 SELECT d.id_solicitud, d.tipo_derecho, d.estado, COUNT(e.id_evidencia) AS total_evidencias
 FROM derechos_arco d
@@ -172,6 +269,7 @@ LEFT JOIN evidencias_arco e
 WHERE d.estado <> 'Resuelto'
 GROUP BY d.id_solicitud, d.tipo_derecho, d.estado;
 
+-- Join + Order by
 --29. Ranking de áreas con incidencias críticas
 SELECT a.nombre_area, COUNT(i.id_incidencia) AS incidencias_criticas
 FROM areas a
@@ -181,6 +279,7 @@ WHERE i.gravedad = 'Crítica'
 GROUP BY a.nombre_area
 ORDER BY incidencias_criticas DESC;
 
+-- Left Join + Left Join + Left Join...
 --30. Consulta final: semáforo de cumplimiento por área
 SELECT a.nombre_area,
        COUNT(DISTINCT c.id_contrato) AS contratos_activos,
@@ -208,4 +307,35 @@ LEFT JOIN riesgos r
 GROUP BY a.nombre_area
 ORDER BY a.nombre_area;
 
+--Right Join
+--Contratos y áreas usando RIGHT JOIN
+SELECT a.nombre_area, c.id_contrato, c.proveedor
+FROM contratos c
+RIGHT JOIN areas a
+  ON c.id_area = a.id_area
+ORDER BY a.nombre_area;
 
+--Políticas y áreas usando RIGHT JOIN
+SELECT a.nombre_area, p.id_politica, p.nombre_politica
+FROM politicas p
+RIGHT JOIN areas a
+  ON p.id_area = a.id_area
+ORDER BY a.nombre_area;
+
+--Full Other Join
+--Reconciliación entre áreas con contratos y áreas con riesgos
+SELECT COALESCE(c.id_area, r.id_area) AS id_area,
+       c.total_contratos,
+       r.total_riesgos
+FROM (
+    SELECT id_area, COUNT(*) AS total_contratos
+    FROM contratos
+    GROUP BY id_area
+) c
+FULL OUTER JOIN (
+    SELECT id_area, COUNT(*) AS total_riesgos
+    FROM riesgos
+    GROUP BY id_area
+) r
+  ON c.id_area = r.id_area
+ORDER BY id_area;
